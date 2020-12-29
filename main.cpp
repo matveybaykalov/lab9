@@ -6,7 +6,6 @@
 #include <vector>
 #include <cmath>
 
-
 using std::cout;
 using std::cin;
 using std::endl;
@@ -25,9 +24,7 @@ struct Node{
 template<typename tn, typename info>
 struct Tree{
 private:
-    Node<tn, info>* root = new Node<tn, info>;
-    bool IfExistRoot = false;
-    vector<vector<Node<tn, info>*>> VectorForPrint;
+    Node<tn, info>* root = nullptr;
     int MaxLengthOfEl;
 
     int GiveLength (info value){
@@ -38,7 +35,7 @@ private:
         return str.length();
     }
 
-    void ComparMax (Node<tn, info>* leave){
+    void CompareMax (Node<tn, info>* leave){
         if (GiveLength(leave->information) > MaxLengthOfEl){
             MaxLengthOfEl = GiveLength(leave->information);
         }
@@ -144,17 +141,14 @@ private:
             TakeHeight(temp->RightN->RightN)-TakeHeight(temp->RightN->LeftN) <= 1 &&
             TakeHeight(temp->RightN->RightN)-TakeHeight(temp->RightN->LeftN) >= 0){
             temp = SmallLeftTurn(temp);
-        }
-        if (TakeHeight(temp->LeftN)-TakeHeight(temp->RightN) == 2 &&
+        } else if (TakeHeight(temp->LeftN)-TakeHeight(temp->RightN) == 2 &&
             TakeHeight(temp->LeftN->LeftN)-TakeHeight(temp->LeftN->RightN) <= 1 &&
             TakeHeight(temp->LeftN->LeftN)-TakeHeight(temp->LeftN->RightN) >= 0){
             temp = SmallRightTurn(temp);
-        }
-        if (TakeHeight(temp->RightN)-TakeHeight(temp->LeftN) == 2 &&
+        } else if (TakeHeight(temp->RightN)-TakeHeight(temp->LeftN) == 2 &&
             TakeHeight(temp->RightN->LeftN) > TakeHeight(temp->RightN->RightN)){
             temp = BigLeftTurn(temp);
-        }
-        if (TakeHeight(temp->LeftN)-TakeHeight(temp->RightN) == 2 &&
+        } else if (TakeHeight(temp->LeftN)-TakeHeight(temp->RightN) == 2 &&
             TakeHeight(temp->LeftN->RightN) > TakeHeight(temp->LeftN->LeftN)){
             temp = BigRightTurn(temp);
         }
@@ -169,16 +163,36 @@ private:
             Balance(temp);
         }
     }
+    void SetLeave(Node<tn, info>* leave, int height, vector<vector<Node<tn, info>*>>& VectorForPrint) {
+        if (height != 0) {
+            if (leave == nullptr) {
+                VectorForPrint[height].push_back(nullptr);
+                SetLeave(nullptr, height-1, VectorForPrint);
+                SetLeave(nullptr, height-1, VectorForPrint);
+            } else {
+                CompareMax(leave);
+                VectorForPrint[height].push_back(leave);
+                SetLeave(leave->LeftN, height-1, VectorForPrint);
+                SetLeave(leave->RightN, height-1, VectorForPrint);
+            }
+        } else{
+            if (leave != nullptr){
+                CompareMax(leave);
+            }
+            VectorForPrint[height].push_back(leave);
+        }
+    }
 public:
     void print () {
-        if (IfExistRoot) {
+        if (root != nullptr) {
+            vector<vector<Node<tn, info>*>> VectorForPrint;
             Node<tn, info> *leave = root;
             VectorForPrint.resize(leave->height);
             VectorForPrint[leave->height - 1].push_back(leave);
             MaxLengthOfEl = GiveLength(leave->information);
             if (leave->height > 1) {
-                SetLeave(leave->LeftN, leave->height - 2);
-                SetLeave(leave->RightN, leave->height - 2);
+                SetLeave(leave->LeftN, leave->height - 2, VectorForPrint);
+                SetLeave(leave->RightN, leave->height - 2, VectorForPrint);
             }
             int length = MaxLengthOfEl;
             for (int i = leave->height - 1; i >= 0; --i) {
@@ -195,35 +209,16 @@ public:
                 }
                 cout << endl;
             }
-            VectorForPrint.clear();
         } else cout << "Tree not found" << endl;
     }
-    void SetLeave(Node<tn, info>* leave, int height) {
-        if (height != 0) {
-            if (leave == nullptr) {
-                VectorForPrint[height].push_back(nullptr);
-                SetLeave(nullptr, height-1);
-                SetLeave(nullptr, height-1);
-            } else {
-                ComparMax(leave);
-                VectorForPrint[height].push_back(leave);
-                SetLeave(leave->LeftN, height-1);
-                SetLeave(leave->RightN, height-1);
-            }
-        } else{
-            if (leave != nullptr){
-                ComparMax(leave);
-            }
-            VectorForPrint[height].push_back(leave);
-        }
-    }
     void insert(tn value, info information){
-        if (!IfExistRoot){
+        if (root == nullptr){
+            root = new Node<tn, info>;
             root->key = value;
-            IfExistRoot = true;
+            root->information = information;
         } else {
-            bool flag = true;
-            Node<tn, info>* NewLeave = root;
+            bool flag = true;                   //этот флаг мне нужен для нахожения нужного места, где будет находится новый узел
+            Node<tn, info>* NewLeave = root;    //можно было бы сделать по-другому, но тогда нужно было бы заводить временную ячейку, которая была бы копией текущей
             while (flag) {
                 if (value >= NewLeave->key) {
                     if (NewLeave->RightN == nullptr) {
@@ -254,101 +249,107 @@ public:
         }
     }
     void remove(tn value) {
-        if (IfExistRoot) {
-            bool flag = true;
+        if (root != nullptr) {
             Node<tn, info> *leave = root;
-            while (flag) {
-                if (value == leave->value) {
-                    if (leave != root || leave->RightN != nullptr || leave->LeftN != nullptr) {
-                        if (leave->RightN == nullptr && leave->LeftN == nullptr) {
-                            flag = false;
-                            leave = leave->prev;
-                            if (leave->RightN != nullptr && leave->RightN->value == value) {
-                                delete leave->RightN;
-                                leave->RightN = nullptr;
-                                leave->height = std::max(TakeHeight(leave->LeftN), TakeHeight(leave->RightN)) + 1;
-                                Balance(leave);
-                                ChangeH(leave);
-                            } else {
-                                delete leave->LeftN;
-                                leave->LeftN = nullptr;
-                                leave->height = std::max(TakeHeight(leave->LeftN), TakeHeight(leave->RightN)) + 1;
-                                Balance(leave);
-                                ChangeH(leave);
-                            }
-                        } else {
-                            flag = false;
-                            if (leave->LeftN == nullptr) {
-                                if (leave != root) { //ситуация 5-10
-                                    if (leave->prev->RightN == leave) {
-                                        leave->prev->RightN = leave->RightN;
-                                    } else {
-                                        leave->prev->LeftN = leave->RightN;
-                                    }
-                                    leave->RightN->prev = leave->prev;
-                                    Balance(leave->RightN);
-                                    ChangeH(leave->RightN);
-                                    delete leave;
-                                } else {
-                                    root = leave->RightN;
-                                    leave->RightN->prev = nullptr;
-                                    IfExistRoot = false;
-                                    delete leave;
-                                }
-                            } else {
-                                Node<tn, info> *MaxNode = leave->LeftN;
-                                while (MaxNode->RightN != nullptr) {
-                                    MaxNode = MaxNode->RightN;
-                                }
-                                leave->value = MaxNode->value;
-                                leave->information = MaxNode->information;
-                                if (MaxNode->LeftN != nullptr) {
-                                    if (MaxNode->prev->RightN == MaxNode) {
-                                        MaxNode->prev->RightN = MaxNode->LeftN;
-                                    } else {
-                                        MaxNode->prev->LeftN = MaxNode->LeftN;
-                                    }
-                                    MaxNode->LeftN->prev = MaxNode->prev;
-                                    MaxNode->prev->height = std::max(TakeHeight(MaxNode->prev->LeftN),
-                                                                     TakeHeight(MaxNode->prev->RightN)) + 1;
-                                    ChangeH(MaxNode);
-                                    delete MaxNode;
-                                } else {
-                                    if (MaxNode->prev->RightN == MaxNode) {
-                                        MaxNode->prev->RightN = nullptr;
-                                    } else {
-                                        MaxNode->prev->LeftN = nullptr;
-                                    }
-                                    MaxNode->prev->height = std::max(TakeHeight(MaxNode->prev->LeftN),
-                                                                     TakeHeight(MaxNode->prev->RightN)) + 1;
-                                    ChangeH(MaxNode);
-                                    delete MaxNode;
-                                }
-                            }
-                        }
-                    } else {
-                        root = nullptr;
-                        delete leave;
-                    }
-                } else if (leave->RightN != nullptr || leave->LeftN != nullptr) {
-                    if (value > leave->value) {
+            while (value != leave->key){
+                if (leave->RightN != nullptr || leave->LeftN != nullptr) { //тут дальнейшее движение ячейки
+                    if (value > leave->key) {
                         leave = leave->RightN;
                     } else leave = leave->LeftN;
                 } else {
-                    cout << "Element "<< value <<" not found" << endl;
-                    flag = false;
+                    break;
                 }
             }
+            if (leave->key == value) { //это проверка на то, является ли текущий элемент удаляемым или нет, потому что пользователь может попросить удалить элемент не принадлежащий дереву
+                if (leave != root || leave->RightN != nullptr ||
+                    leave->LeftN != nullptr) { //проверка является ли текущий узел корнем или листом
+                    if (leave->RightN == nullptr && leave->LeftN == nullptr) {
+                        leave = leave->prev;
+                        if (leave->RightN != nullptr &&
+                            leave->RightN->key == value) { //смотрю из какой вершины я поднялся, потом ту и удаляю
+                            delete leave->RightN;
+                            leave->RightN = nullptr;
+                            leave->height = std::max(TakeHeight(leave->LeftN), TakeHeight(leave->RightN)) +
+                                            1; //изменяю глубину текщей вершины
+                            Balance(leave);
+                            ChangeH(leave); //изменяю глубину вершин которые находятся выше
+                        } else {
+                            delete leave->LeftN;
+                            leave->LeftN = nullptr;
+                            leave->height = std::max(TakeHeight(leave->LeftN), TakeHeight(leave->RightN)) + 1;
+                            Balance(leave);
+                            ChangeH(leave);
+                        }
+                    } else {
+                        if (leave->LeftN ==
+                            nullptr) { //проверяю есть ли в левый наследник у удаялемого узла, если да, то там буду искать максимум,
+                            if (leave !=
+                                root) {       //есле нет, то я смотрю откуда я попал в текущий узел и тому узлу присваиваю правого наследника
+                                if (leave->prev->RightN == leave) {
+                                    leave->prev->RightN = leave->RightN;
+                                } else {
+                                    leave->prev->LeftN = leave->RightN;
+                                }
+                                leave->RightN->prev = leave->prev;
+                                Balance(leave->RightN);
+                                ChangeH(leave->RightN);
+                                delete leave;
+                            } else { //ситуация 5-10
+                                root = leave->RightN; //это одна из крайних ситуация, когда нужно удалить кореной элемент, к оторого есть только правый наследник
+                                leave->RightN->prev = nullptr;
+                                delete leave;
+                            }
+                        } else {
+                            Node<tn, info> *MaxNode = leave->LeftN; //MaxNode ищет максимальный элемент в правом поддереве
+                            while (MaxNode->RightN != nullptr) { //поиск максимального элемента
+                                MaxNode = MaxNode->RightN;
+                            }
+                            leave->key = MaxNode->key;
+                            leave->information = MaxNode->information;
+                            if (MaxNode->prev->RightN ==
+                                MaxNode) {    //смотрю из какой вершины я попал в MaxNode и присваиваю этой левого потомка
+                                MaxNode->prev->RightN = MaxNode->LeftN;
+                            } else {
+                                MaxNode->prev->LeftN = MaxNode->LeftN;
+                            }
+                            if (MaxNode->LeftN != nullptr) {
+                                MaxNode->LeftN->prev = MaxNode->prev;
+                            }
+                            MaxNode->prev->height = std::max(TakeHeight(MaxNode->prev->LeftN),
+                                                             TakeHeight(MaxNode->prev->RightN)) + 1;
+                            ChangeH(MaxNode);
+                            delete MaxNode;
+                        }
+                    }
+                } else { //это ситуация,когда удаляемый элемент является корнем, у которого нет наследника
+                    root = nullptr;
+                    delete leave;
+                }
+            } else {
+                cout << "Element "<< value <<" not found" << endl;
+            }
         } else {
-            cout << "Element "<< value <<" not found" << endl;
+            cout << "Tree is not exist" << endl;
         }
     }
     void destruct(){
-        while(root->LeftN != nullptr || root->RightN != nullptr){
-            remove(root->value);
-        }
+        del(root);
+        root = nullptr;
     }
 };
+
+template<typename tn, typename info>
+void del(Node<tn, info>* node){
+    if (node->LeftN != nullptr){
+        del(node->LeftN);
+        node->LeftN = nullptr;
+    }
+    if (node->RightN != nullptr){
+        del(node->RightN);
+        node->RightN = nullptr;
+    }
+    delete node;
+}
 
 int main() {
     Tree<int, std::string> MyTree;
@@ -359,5 +360,8 @@ int main() {
     MyTree.insert(5,"jhwer");
     MyTree.insert(6,"Aosqpw");
     MyTree.print();
+    MyTree.remove(4);
+    MyTree.print();
+    MyTree.destruct();
     return 0;
 }
