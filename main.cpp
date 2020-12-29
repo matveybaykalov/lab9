@@ -251,7 +251,7 @@ public:
     void remove(tn value) {
         if (root != nullptr) {
             Node<tn, info> *leave = root;
-            while (value != leave->key){
+            while (value != leave->key){ //поиск удаляемого узла
                 if (leave->RightN != nullptr || leave->LeftN != nullptr) { //тут дальнейшее движение ячейки
                     if (value > leave->key) {
                         leave = leave->RightN;
@@ -261,16 +261,14 @@ public:
                 }
             }
             if (leave->key == value) { //это проверка на то, является ли текущий элемент удаляемым или нет, потому что пользователь может попросить удалить элемент не принадлежащий дереву
-                if (leave != root || leave->RightN != nullptr ||
-                    leave->LeftN != nullptr) { //проверка является ли текущий узел корнем или листом
+                if (leave != root || leave->RightN != nullptr || leave->LeftN != nullptr) { //проверка является ли текущий узел корнем или листом
                     if (leave->RightN == nullptr && leave->LeftN == nullptr) {
                         leave = leave->prev;
                         if (leave->RightN != nullptr &&
                             leave->RightN->key == value) { //смотрю из какой вершины я поднялся, потом ту и удаляю
                             delete leave->RightN;
                             leave->RightN = nullptr;
-                            leave->height = std::max(TakeHeight(leave->LeftN), TakeHeight(leave->RightN)) +
-                                            1; //изменяю глубину текщей вершины
+                            leave->height = std::max(TakeHeight(leave->LeftN), TakeHeight(leave->RightN)) + 1; //изменяю глубину текщей вершины
                             Balance(leave);
                             ChangeH(leave); //изменяю глубину вершин которые находятся выше
                         } else {
@@ -283,8 +281,7 @@ public:
                     } else {
                         if (leave->LeftN ==
                             nullptr) { //проверяю есть ли в левый наследник у удаялемого узла, если да, то там буду искать максимум,
-                            if (leave !=
-                                root) {       //есле нет, то я смотрю откуда я попал в текущий узел и тому узлу присваиваю правого наследника
+                            if (leave != root) {       //есле нет, то я смотрю откуда я попал в текущий узел и тому узлу присваиваю правого наследника
                                 if (leave->prev->RightN == leave) {
                                     leave->prev->RightN = leave->RightN;
                                 } else {
@@ -315,8 +312,7 @@ public:
                             if (MaxNode->LeftN != nullptr) {
                                 MaxNode->LeftN->prev = MaxNode->prev;
                             }
-                            MaxNode->prev->height = std::max(TakeHeight(MaxNode->prev->LeftN),
-                                                             TakeHeight(MaxNode->prev->RightN)) + 1;
+                            MaxNode->prev->height = std::max(TakeHeight(MaxNode->prev->LeftN), TakeHeight(MaxNode->prev->RightN)) + 1;
                             ChangeH(MaxNode);
                             delete MaxNode;
                         }
